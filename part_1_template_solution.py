@@ -161,7 +161,29 @@ class Section1:
         answer["clf"] = clf_dt  # the estimator (classifier instance)
         answer["cv"] = cv 
         answer["scores"] = score
-        answer["explain_kfold_vs_shuffle_split"] = ''
+        answer["explain_kfold_vs_shuffle_split"] = '''
+kFolds:
+pros:
+- simpler to implement
+- guaranteed folds: always uses all the data atleast once in train and test data
+- less com[putational cost
+cons:
+- might not represent real world randomness
+- Might suffer from data leakage: If the data has inherent ordering (e.g., time series), K-fold can
+leak information from future folds to the current fold, leading to misleading performance estimates.
+
+Shuffle Split:
+pros:
+- replecates real world randomness
+- less prone to data leakage
+- flexible fold size
+cons:
+- more complex to implement
+- no guaranteed use of all data
+- more computationally expensive
+
+TLDR; If the data size is less and you want a simple implementation use Kfolds. If you want more real world
+repesentation for more reliable results and if you have large data set use shuffle split'''
         return answer
 
     # ----------------------------------------------------------------------
