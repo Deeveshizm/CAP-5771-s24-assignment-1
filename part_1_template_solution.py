@@ -15,7 +15,7 @@ from sklearn.model_selection import (
 )
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import GridSearchCV
 
 from typing import Any
@@ -90,18 +90,20 @@ class Section1:
         Xtrain, ytrain = u.filter_out_7_9s(X, y)
         Xtest, ytest = u.filter_out_7_9s(Xtest, ytest)
         Xtrain = nu.scale_data(Xtrain)
-        Xtest = nu.scale_data(Xtest)
+        Xtest = nu.scale_data(Xtest) 
+        ytrain = nu.intcheck(ytrain)
+        ytest = nu.intcheck(ytest)
 
         answer = {}
 
         # Enter your code and fill the `answer` dictionary
 
-        answer["length_Xtrain"] = None  # Number of samples
-        answer["length_Xtest"] = None
-        answer["length_ytrain"] = None
-        answer["length_ytest"] = None
-        answer["max_Xtrain"] = None
-        answer["max_Xtest"] = None
+        answer["length_Xtrain"] = len(Xtrain)  # Number of samples
+        answer["length_Xtest"] = len(Xtest)
+        answer["length_ytrain"] = len(ytrain)
+        answer["length_ytest"] = len(ytest)
+        answer["max_Xtrain"] = np.max(Xtrain)
+        answer["max_Xtest"] = np.max(Xtest)
         return answer, Xtrain, ytrain, Xtest, ytest
 
     """
@@ -119,13 +121,19 @@ class Section1:
         y: NDArray[np.int32],
     ):
         # Enter your code and fill the `answer` dictionary
-
+        Xtrain = X
+        ytrain = y
+        seed = self.seed
+        clf_dt = DecisionTreeClassifier(random_state=seed)
+        cv = ShuffleSplit(n_splits=5, random_state=seed)
+        res = nu.classifier_with_cv(Xtrain, ytrain, clf_dt, cv)
+        score = nu.cv_result_dict(res)
         answer = {}
-        answer["clf"] = None  # the estimator (classifier instance)
-        answer["cv"] = None  # the cross validator instance
+        answer["clf"] = clf_dt  # the estimator (classifier instance)
+        answer["cv"] = cv  # the cross validator instance
         # the dictionary with the scores  (a dictionary with
         # keys: 'mean_fit_time', 'std_fit_time', 'mean_accuracy', 'std_accuracy'.
-        answer["scores"] = None
+        answer["scores"] = score
         return answer
 
     # ---------------------------------------------------------
@@ -142,12 +150,18 @@ class Section1:
         # Enter your code and fill the `answer` dictionary
 
         # Answer: same structure as partC, except for the key 'explain_kfold_vs_shuffle_split'
-
+        Xtrain = X
+        ytrain = y
+        seed = self.seed
+        clf_dt = DecisionTreeClassifier(random_state=seed)
+        cv = ShuffleSplit(n_splits=5, random_state=seed)
+        res = nu.classifier_with_cv(Xtrain, ytrain, clf_dt, cv)
+        score = nu.cv_result_dict(res)
         answer = {}
-        answer["clf"] = None
-        answer["cv"] = None
-        answer["scores"] = None
-        answer["explain_kfold_vs_shuffle_split"] = None
+        answer["clf"] = clf_dt  # the estimator (classifier instance)
+        answer["cv"] = cv 
+        answer["scores"] = score
+        answer["explain_kfold_vs_shuffle_split"] = ''
         return answer
 
     # ----------------------------------------------------------------------
@@ -165,8 +179,19 @@ class Section1:
         # Answer: built on the structure of partC
         # `answer` is a dictionary with keys set to each split, in this case: 2, 5, 8, 16
         # Therefore, `answer[k]` is a dictionary with keys: 'scores', 'cv', 'clf`
+        k = [2, 5, 8, 16]
+        Xtrain = X
+        ytrain = y
+        seed = self.seed
+        clf_dt = DecisionTreeClassifier(random_state=seed)
+        scores = {}
+        for i in range(len(k)):
+            cv = ShuffleSplit(n_splits=k[i], random_state=seed)
+            res = nu.classifier_with_cv(Xtrain, ytrain, clf_dt, cv)
+            score = nu.cv_result_dict(res)
+            scores[k[i]] = score
 
-        answer = {}
+        answer = scores
 
         # Enter your code, construct the `answer` dictionary, and return it.
 
@@ -193,9 +218,39 @@ class Section1:
         y: NDArray[np.int32],
     ) -> dict[str, Any]:
         """ """
-
+        Xtrain = X
+        ytrain = y
+        seed = self.seed
+        cv = ShuffleSplit(n_splits=5, random_state=seed)
+        clf_rf = RandomForestClassifier(random_state=seed)
+        clf_dt = DecisionTreeClassifier(random_state=seed)
+        res_dt = nu.classifier_with_cv(Xtrain, ytrain, clf_dt, cv)
+        res_rf = nu.classifier_with_cv(Xtrain, ytrain, clf_rf, cv)
+        score_dt = nu.cv_result_dict(res_dt)
+        score_rf = nu.cv_result_dict(res_rf)
+        if score_rf['mean_fit_time'] < score_dt['mean_fit_time']:
+            fastest = score_rf['mean_fit_time'] 
+        else:
+            fastest = score_dt['mean_fit_time']
+        
+        if score_rf['mean_accuracy'] > score_dt['mean_accuracy']:
+            highest_acc = 'clf_rf'
+        else:
+            highest_acc = 'clf_dt'
+        if score_rf['std_accuracy'] < score_dt['std_accuracy']:
+            lowest_var = score_rf['std_accuracy'] 
+        else:
+            lowest_var = score_dt['std_accuracy']
         answer = {}
-
+        answer["clf_RF"] = clf_rf  # the estimator (classifier instance)
+        answer["clf_DT"] = clf_dt
+        answer["cv"] = cv 
+        answer["scores_RF"] = score_rf
+        answer["scores_DT"] = score_dt
+        answer['model_highest_accuracy'] = highest_acc
+        answer['model_lowest_variance'] = lowest_var
+        answer['model_fastest'] = fastest
+        
         # Enter your code, construct the `answer` dictionary, and return it.
 
         """
@@ -252,6 +307,43 @@ class Section1:
         Note:
         This function is not fully implemented yet.
         """
+        param_grid = {
+            'criterion': ['gini', 'entropy'],
+            'max_depth': [None, 10, 20, 30],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4],
+            'max_features': ['sqrt', 'log2']
+        }
+
+        # Initialize the Random Forest Classifier
+        rf_clf = RandomForestClassifier(random_state=self.seed)
+        rf_clf.fit(X,y)
+        y_train_pred = rf_clf.predict(X)
+        y_test_pred = rf_clf.predict(Xtest)
+        # Initialize GridSearchCV
+        grid_search = GridSearchCV(estimator=rf_clf, param_grid=param_grid, cv=ShuffleSplit(n_splits=5,random_state=self.seed), scoring='accuracy', n_jobs=-1)
+        # Perform grid search
+        grid_search.fit(X, y)
+        best_params= grid_search.best_estimator_
+        #print("best_PARAMS:",best_params)
+        accuracy = best_params.score(Xtest,ytest)
+        mean_test_scores = grid_search.cv_results_['mean_test_score']
+        # Calculate the mean accuracy
+        mean_accuracy = mean_test_scores.mean()
+        best_rf_clf = best_params
+        #best_rf_clf.fit(X,y)
+        y_best_train_pred = best_rf_clf.predict(X)
+        y_best_test_pred = best_rf_clf.predict(Xtest)
+
+        # Compute the confusion matrix
+        confusion_matrix_train_orig = confusion_matrix(y, y_train_pred)
+        confusion_matrix_test_orig = confusion_matrix(ytest,y_test_pred)
+        confusion_matrix_train_best = confusion_matrix(y,y_best_train_pred)
+        confusion_matrix_test_best = confusion_matrix(ytest,y_best_test_pred)
+
+        
+        
+
 
         # refit=True: fit with the best parameters when complete
         # A test should look at best_index_, best_score_ and best_params_
@@ -265,7 +357,41 @@ class Section1:
          5) n_estimators
         """
 
+        
+        ### accuracy calculated out of confusion matrix 
+       
+
+        # Example usage:
+        # Assuming you have four confusion matrices: confusion_matrix_train_orig, confusion_matrix_test_orig,
+        # confusion_matrix_train_best, confusion_matrix_test_best
+        accuracies = nu.compute_accuracies(confusion_matrix_train_orig, confusion_matrix_test_orig,
+                                        confusion_matrix_train_best, confusion_matrix_test_best)
+        
         answer = {}
+        answer["clf"] = RandomForestClassifier(random_state=self.seed)
+        answer["default_parameters"] = {'random_state':self.seed}
+        answer["best_estimator"] = best_params
+        answer["grid_search"] = GridSearchCV(estimator=rf_clf, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+        answer["mean_accuracy_cv"] = mean_accuracy
+        answer["confusion_matrix_train_orig"] = confusion_matrix_train_orig
+        answer["confusion_matrix_test_orig"] =  confusion_matrix_test_orig
+        answer["confusion_matrix_train_best"] = confusion_matrix_train_best
+        answer["confusion_matrix_test_best"] = confusion_matrix_test_best
+        answer["accuracy_orig_full_training"] = accuracies["accuracy_orig_full_training"]
+        answer["accuracy_orig_full_testing"] = accuracies["accuracy_orig_full_testing"]
+        answer["accuracy_best_full_training"] = accuracies["accuracy_best_full_training"]
+        answer["accuracy_best_full_testing"] = accuracies["accuracy_best_full_testing"]
+        # refit=True: fit with the best parameters when complete
+        # A test should look at best_index_, best_score_ and best_params_
+        """
+        List of parameters you are allowed to vary. Choose among them.
+         1) criterion,
+         2) max_depth,
+         3) min_samples_split, 
+         4) min_samples_leaf,
+         5) max_features 
+         5) n_estimators
+        """
 
         # Enter your code, construct the `answer` dictionary, and return it.
 
@@ -296,5 +422,6 @@ class Section1:
             "accuracy_best_full_testing"
                
         """
-
         return answer
+    
+
