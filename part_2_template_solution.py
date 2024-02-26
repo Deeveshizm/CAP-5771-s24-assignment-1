@@ -167,13 +167,13 @@ class Section2:
             clf_F.fit(X_train,y_train)
             y_train_pred = clf_F.predict(X_train)
             y_test_pred = clf_F.predict(X_test)
-            partF["clf"] =  clf_F
             confusion_matrix_train = confusion_matrix(y_train, y_train_pred)
             confusion_matrix_test = confusion_matrix(y_test,y_test_pred)
-            partF["cv"] = cv_F
             partF["scores_train_F"] = clf_F.score(X_train,y_train)
             partF["scores_test_F"] = clf_F.score(X_test,y_test)
             partF["mean_cv_accuracy_F"] = np.mean(scores_trainlr['test_score']) 
+            partF["clf"] =  clf_F
+            partF["cv"] = cv_F
             partF["conf_mat_train"] = confusion_matrix_train
             partF["conf_mat_test"] = confusion_matrix_test
             answer[ntrain_list[i]] = {}
