@@ -144,7 +144,7 @@ class Section2:
                     score_dict['std_accuracy'] = array.std()
             partC["clf"] = clf  # the estimator (classifier instance)
             partC["cv"] = cv
-            partC["scores"] = score_dict
+            partC["scores_C"] = score_dict
 
             ##Part D
             partD = {}
@@ -157,7 +157,7 @@ class Section2:
             
             partD["clf"] = clf  # the estimator (classifier instance)
             partD["cv"] = cv_D
-            partD["scores"] = score_dict
+            partD["scores_D"] = score_dict
 
             ##Part F
             partF = {}
